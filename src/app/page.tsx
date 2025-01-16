@@ -1,6 +1,6 @@
 "use client";
 
-import GmailViewer from "@/components/ui/Gmail";
+import GmailViewer from "@/components/Gmail";
 import { SessionProvider } from "next-auth/react";
 import React from "react";
 
