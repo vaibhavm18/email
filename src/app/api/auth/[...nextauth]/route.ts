@@ -8,9 +8,16 @@ const authOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
-          scope:
-            "openid profile email https://www.googleapis.com/auth/gmail.readonly", // Gmail read-only scope
+          scope: [
+            "openid",
+            "profile",
+            "email",
+            "https://www.googleapis.com/auth/gmail.readonly",
+            "https://www.googleapis.com/auth/gmail.send",
+
+          ].join(" "),
           access_type: "offline",
+          prompt: "consent"
         },
       },
     }),
@@ -22,7 +29,6 @@ const authOptions = {
   callbacks: {
     // @ts-ignore
     async jwt({ token, account }) {
-      console.log("T", token, account);
       // Add the access_token and refresh_token to the JWT token
       if (account) {
         token.accessToken = account.access_token;
@@ -34,7 +40,6 @@ const authOptions = {
     },
     // @ts-ignore
     async session({ session, token }) {
-      console.log("S", session, token);
       // Add the access_token and refresh_token from the JWT to the session
       if (token) {
         session.accessToken = token.accessToken as string;

@@ -2,7 +2,14 @@ import { useSession, signIn, signOut } from "next-auth/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Mail, User, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  Loader2,
+  Mail,
+  User,
+  MessageSquare,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 
 interface GmailMessagePart {
   mimeType: string;
@@ -10,7 +17,7 @@ interface GmailMessagePart {
   attachmentId?: string;
 }
 
-interface GmailMessage {
+export interface GmailMessage {
   id: string;
   threadId: string;
   labelIds: string[];
@@ -25,9 +32,7 @@ interface GmailMessage {
 
 const decodeBase64 = (encodedData: string) => {
   // Replace URL-safe characters back to standard base64 characters
-  const base64 = encodedData
-    .replace(/-/g, '+')
-    .replace(/_/g, '/');
+  const base64 = encodedData.replace(/-/g, "+").replace(/_/g, "/");
 
   // Fix padding
   const fixedBase64 = base64.padEnd(
@@ -38,12 +43,12 @@ const decodeBase64 = (encodedData: string) => {
   try {
     // Decode base64 to binary string
     const binaryString = atob(fixedBase64);
-    
+
     // Convert binary string to UTF-8
     return decodeURIComponent(
       Array.from(binaryString)
-        .map(char => '%' + ('00' + char.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
+        .map((char) => "%" + ("00" + char.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
     );
   } catch (e) {
     console.error("Failed to decode base64:", e);
@@ -56,12 +61,16 @@ const getEmailContent = (message: GmailMessage) => {
   // First check parts array
   if (message.parts) {
     // Try to find HTML content first
-    const htmlPart = message.parts.find(part => part.mimeType === 'text/html');
+    const htmlPart = message.parts.find(
+      (part) => part.mimeType === "text/html"
+    );
     if (htmlPart?.data) {
       return { content: decodeBase64(htmlPart.data), isHtml: true };
     }
     // Fall back to plain text
-    const textPart = message.parts.find(part => part.mimeType === 'text/plain');
+    const textPart = message.parts.find(
+      (part) => part.mimeType === "text/plain"
+    );
     if (textPart?.data) {
       return { content: decodeBase64(textPart.data), isHtml: false };
     }
@@ -78,9 +87,11 @@ const getEmailContent = (message: GmailMessage) => {
 
 // Add helper function to get header value
 const getHeader = (message: GmailMessage, headerName: string) => {
-  return message.payload.headers.find(
-    header => header.name.toLowerCase() === headerName.toLowerCase()
-  )?.value || '';
+  return (
+    message.payload.headers.find(
+      (header) => header.name.toLowerCase() === headerName.toLowerCase()
+    )?.value || ""
+  );
 };
 
 export default function GmailViewer() {
@@ -91,7 +102,7 @@ export default function GmailViewer() {
   const [expandedEmails, setExpandedEmails] = useState<Set<string>>(new Set());
 
   const toggleEmailExpansion = (id: string) => {
-    setExpandedEmails(prev => {
+    setExpandedEmails((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(id)) {
         newSet.delete(id);
@@ -100,6 +111,57 @@ export default function GmailViewer() {
       }
       return newSet;
     });
+  };
+
+  const sendEmail = async (message: GmailMessage) => {
+    try {
+      setIsLoading(true);
+      console.log("Message", message);
+
+      const res = await fetch("/api/gmail/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: message.id, threadId: message.threadId }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to send email");
+      }
+
+      const data = await res.json();
+      console.log("Email sent successfully:", data);
+    } catch (error) {
+      console.error("Error sending email:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const startGmailWatch = async (accessToken: string) => {
+    setIsLoading(true); // Set loading state to true
+    try {
+      const res = await fetch("/api/gmail/watch", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ accessToken }),
+      });
+
+      if (!res.ok) {
+        return;
+      }
+
+      const data = await res.json();
+      console.log("Gmail Watch API Response:", data);
+    } catch (error) {
+      console.error("Error starting Gmail watch:", error);
+      setError("Failed to start Gmail watch. Please try again."); // Set error message
+    } finally {
+      setIsLoading(false); // Set loading state back to false
+    }
   };
 
   const fetchEmails = async () => {
@@ -143,7 +205,11 @@ export default function GmailViewer() {
                     "Fetch Emails"
                   )}
                 </Button>
-                <Button onClick={() => signOut()} variant="outline">
+                <Button
+                  disabled={isLoading}
+                  onClick={() => signOut()}
+                  variant="outline"
+                >
                   Sign Out
                 </Button>
               </div>
@@ -165,16 +231,41 @@ export default function GmailViewer() {
                 <CardTitle className="text-lg flex items-center justify-between">
                   <div className="flex items-center">
                     <Mail className="mr-2 h-5 w-5" />
-                    {getHeader(message, 'Subject')}
+                    {getHeader(message, "Subject")}
                   </div>
-                  <Button variant="ghost" size="sm">
-                    {expandedEmails.has(message.id) ? 'Collapse' : 'Expand'}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      disabled={isLoading}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        sendEmail(message);
+                      }}
+                    >
+                      Use OpenAI to Send Email
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleEmailExpansion(message.id);
+                      }}
+                    >
+                      {expandedEmails.has(message.id) ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 </CardTitle>
                 <div className="text-sm text-gray-600">
-                  <span>{getHeader(message, 'From')}</span>
+                  <span>{getHeader(message, "From")}</span>
                   <span className="mx-2">•</span>
-                  <span>{new Date(getHeader(message, 'Date')).toLocaleString()}</span>
+                  <span>
+                    {new Date(getHeader(message, "Date")).toLocaleString()}
+                  </span>
                 </div>
               </CardHeader>
               {expandedEmails.has(message.id) && (
@@ -183,7 +274,7 @@ export default function GmailViewer() {
                     {/* To info */}
                     <div className="flex items-center">
                       <User className="mr-2 h-4 w-4" />
-                      <span>To: {getHeader(message, 'To')}</span>
+                      <span>To: {getHeader(message, "To")}</span>
                     </div>
 
                     {/* Labels */}
@@ -219,12 +310,14 @@ export default function GmailViewer() {
                     </div>
 
                     {/* Attachments section */}
-                    {message.parts?.some(part => part.attachmentId) && (
+                    {message.parts?.some((part) => part.attachmentId) && (
                       <div className="mt-4 pt-4 border-t border-gray-200">
-                        <h4 className="text-sm font-semibold mb-2">Attachments:</h4>
+                        <h4 className="text-sm font-semibold mb-2">
+                          Attachments:
+                        </h4>
                         <div className="flex flex-wrap gap-2">
                           {message.parts
-                            .filter(part => part.attachmentId)
+                            .filter((part) => part.attachmentId)
                             .map((part, index) => (
                               <div
                                 key={part.attachmentId || index}
@@ -246,4 +339,3 @@ export default function GmailViewer() {
     </div>
   );
 }
-

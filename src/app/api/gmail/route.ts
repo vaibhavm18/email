@@ -3,16 +3,27 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import GoogleProvider from "next-auth/providers/google";
 
-const authOptions = {
+export const authOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
-          scope:
-            "openid profile email https://www.googleapis.com/auth/gmail.readonly", // Gmail read-only scope
+          scope: [
+            "openid",
+            "profile",
+            "email",
+            "https://www.googleapis.com/auth/gmail.readonly",
+            "https://www.googleapis.com/auth/gmail.send",
+            "https://www.googleapis.com/auth/gmail.modify",
+            "https://www.googleapis.com/auth/gmail.labels",
+            "https://www.googleapis.com/auth/gmail.settings.basic",
+            "https://www.googleapis.com/auth/gmail.settings.sharing",
+            "https://www.googleapis.com/auth/gmail.settings.sendAs",
+          ].join(" "),
           access_type: "offline",
+          prompt: "consent"
         },
       },
     }),
@@ -73,10 +84,11 @@ export async function GET() {
     const res = await gmail.users.messages.list({
       userId: "me",
       labelIds: ["INBOX"],
-      maxResults: 5, // Increased from 5
+      maxResults: 5, // Fetch the latest 5 unread emails
+      q: "is:unread", // Fetch only unread messages
     });
 
-    const messages = res.data.messages?.slice(0,3) || [];
+    const messages = res.data.messages || [];
 
     // Fetch full message details with complete format
     const messageDetailsPromises = messages.map((message) =>
