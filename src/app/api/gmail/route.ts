@@ -84,7 +84,7 @@ export async function GET() {
     const res = await gmail.users.messages.list({
       userId: "me",
       labelIds: ["INBOX"],
-      maxResults: 5, // Fetch the latest 5 unread emails
+      maxResults: 15, // Fetch the latest 5 unread emails
       q: "is:unread", // Fetch only unread messages
     });
 

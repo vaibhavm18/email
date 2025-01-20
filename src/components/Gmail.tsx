@@ -268,71 +268,7 @@ export default function GmailViewer() {
                   </span>
                 </div>
               </CardHeader>
-              {expandedEmails.has(message.id) && (
-                <CardContent className="pt-4">
-                  <div className="space-y-2 text-sm text-gray-600">
-                    {/* To info */}
-                    <div className="flex items-center">
-                      <User className="mr-2 h-4 w-4" />
-                      <span>To: {getHeader(message, "To")}</span>
-                    </div>
-
-                    {/* Labels */}
-                    {message.labelIds && (
-                      <div className="flex gap-2">
-                        {message.labelIds.map((label) => (
-                          <span
-                            key={label}
-                            className="px-2 py-1 bg-gray-100 rounded-full text-xs"
-                          >
-                            {label}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Email Content */}
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <h4 className="text-sm font-semibold mb-2">Message:</h4>
-                      {(() => {
-                        const { content, isHtml } = getEmailContent(message);
-                        return isHtml ? (
-                          <div
-                            className="text-sm text-gray-600 prose max-w-none"
-                            dangerouslySetInnerHTML={{ __html: content }}
-                          />
-                        ) : (
-                          <pre className="text-sm text-gray-600 whitespace-pre-wrap">
-                            {content}
-                          </pre>
-                        );
-                      })()}
-                    </div>
-
-                    {/* Attachments section */}
-                    {message.parts?.some((part) => part.attachmentId) && (
-                      <div className="mt-4 pt-4 border-t border-gray-200">
-                        <h4 className="text-sm font-semibold mb-2">
-                          Attachments:
-                        </h4>
-                        <div className="flex flex-wrap gap-2">
-                          {message.parts
-                            .filter((part) => part.attachmentId)
-                            .map((part, index) => (
-                              <div
-                                key={part.attachmentId || index}
-                                className="px-3 py-2 bg-gray-100 rounded-lg text-sm"
-                              >
-                                {part.mimeType}
-                              </div>
-                            ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              )}
-            </Card>
+                         </Card>
           ))}
         </div>
       )}
