@@ -7,7 +7,7 @@ import { Section } from "@/components/ui/section";
 
 export default function Page() {
   const appName = "YourAppName"; // Replace with your app name
-  const contactEmail = "contact@yourapp.com"; // Replace with your contact email
+  const contactEmail = "suboddlyai@gmail.com"; 
 
   return (
     <div className="container mx-auto py-8 px-4">

@@ -74,10 +74,9 @@ export async function GET() {
       userId: "me",
       labelIds: ["INBOX"],
       maxResults: 5, // Increased from 5
-      q: "is:unread", // Optional: fetch unread emails only
     });
 
-    const messages = res.data.messages || [];
+    const messages = res.data.messages?.slice(0,3) || [];
 
     // Fetch full message details with complete format
     const messageDetailsPromises = messages.map((message) =>
